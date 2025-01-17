@@ -5,6 +5,7 @@
   ...
 }:
 with lib; let
+  fnotify = pkgs.callPackage ./default.nix {};
   cfg = config.services.fnotify;
 in {
   options = {
@@ -38,11 +39,11 @@ in {
   config = mkIf cfg.enable {
     systemd.services.fnotify = {
       description = "Fnotify Service";
-      after = ["graphical.target"];
+      after = ["network.target"];
       wantedBy = ["multi-user.target"];
 
       serviceConfig = {
-        ExecStart = "${pkgs.fnotify}/bin/fnotify --dir ${cfg.dir} --prefix ${cfg.prefix} --event ${cfg.events}";
+        ExecStart = "${fnotify}/bin/fnotify --dir ${cfg.dir} --prefix ${cfg.prefix} --event ${cfg.events}";
         Restart = "always";
         RestartSec = "5s";
       };
