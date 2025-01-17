@@ -1,46 +1,59 @@
 {
-  description = "Development environment";
-  inputs.flake-utils.url = "github:numtide/flake-utils";
-  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
+  description = "Basic Go web app";
+
+  inputs = {
+    # 1.23.2 release
+    go-nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
+
+    flake-utils.url = "github:numtide/flake-utils";
+  };
 
   outputs = {
     self,
+    go-nixpkgs,
     flake-utils,
-    nixpkgs,
-  }:
-    flake-utils.lib.eachDefaultSystem (system: let
-      pkgs = nixpkgs.legacyPackages.${system};
-    in {
-      devShell = pkgs.mkShell {
-        packages = with pkgs; [
-          go
-        ];
+  }: let
+    nixosModule = {
+      config,
+      lib,
+      pkgs,
+      ...
+    }: {
+      options.services.fnotify = {
+        enable = lib.mkEnableOption "Basic Go web app service";
       };
 
-      packages.fnotify = pkgs.buildGoModule {
+      config = lib.mkIf config.services.fnotify.enable {
+        systemd.services.fnotify = {
+          description = "Basic Go Web App Service";
+          wantedBy = ["multi-user.target"];
+          after = ["graphical.target"];
+          serviceConfig = {
+            ExecStart = "${self.packages.${pkgs.system}.default}/bin/fnotify";
+            Restart = "always";
+            Type = "simple";
+            DynamicUser = "yes";
+          };
+        };
+      };
+    };
+  in
+    (flake-utils.lib.eachDefaultSystem (system: let
+      gopkg = go-nixpkgs.legacyPackages.${system};
+    in {
+      packages.default = gopkg.buildGoModule {
         pname = "fnotify";
         version = "0.1.0";
-        src = self;
+        src = ./.;
         vendorHash = null;
-
-        meta = {
-          description = "A file system notification tool";
-          maintainers = with pkgs.lib.maintainers; [filipforsstrom];
-        };
       };
 
-      defaultPackage = self.packages.${system}.fnotify;
-
-      nixosModules.default = {
-        imports = [./fnotify.nix];
-
-        config = {
-          config,
-          pkgs,
-          ...
-        }: {
-          services.fnotify.package = self.packages.${system}.fnotify;
-        };
+      apps.default = {
+        type = "app";
+        program = "${self.packages.${system}.default}/bin/fnotify";
       };
-    });
+    }))
+    // {
+      nixosModules.default = nixosModule;
+    };
 }
