@@ -1,7 +1,7 @@
 {
   description = "Development environment";
   inputs.flake-utils.url = "github:numtide/flake-utils";
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
 
   outputs = {
     self,
@@ -16,10 +16,18 @@
           packages = with pkgs; [
             go
           ];
+        };
 
-          shellHook = ''
+        packages.default = pkgs.buildGoModule {
+          pname = "fnotify";
+          version = "0.1.0";
+          src = ./.;
+          vendorHash = null;
 
-          '';
+          meta = {
+            description = "A file system notification tool";
+            maintainers = with pkgs.lib.maintainers; [filipforsstrom];
+          };
         };
       }
     );
