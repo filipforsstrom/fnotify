@@ -8,39 +8,39 @@
     flake-utils,
     nixpkgs,
   }:
-    flake-utils.lib.eachDefaultSystem (
-      system: let
-        pkgs = nixpkgs.legacyPackages.${system};
-      in {
-        devShell = pkgs.mkShell {
-          packages = with pkgs; [
-            go
-          ];
+    flake-utils.lib.eachDefaultSystem (system: let
+      pkgs = nixpkgs.legacyPackages.${system};
+    in {
+      devShell = pkgs.mkShell {
+        packages = with pkgs; [
+          go
+        ];
+      };
+
+      packages.fnotify = pkgs.buildGoModule {
+        pname = "fnotify";
+        version = "0.1.0";
+        src = self;
+        vendorHash = null;
+
+        meta = {
+          description = "A file system notification tool";
+          maintainers = with pkgs.lib.maintainers; [filipforsstrom];
         };
+      };
 
-        packages.default = pkgs.buildGoModule {
-          pname = "fnotify";
-          version = "0.1.0";
-          src = ./.;
-          vendorHash = null;
+      defaultPackage = self.packages.${system}.fnotify;
 
-          meta = {
-            description = "A file system notification tool";
-            maintainers = with pkgs.lib.maintainers; [filipforsstrom];
-          };
+      nixosModules.default = {
+        imports = [./fnotify.nix];
+
+        config = {
+          config,
+          pkgs,
+          ...
+        }: {
+          services.fnotify.package = self.packages.${system}.fnotify;
         };
-
-        nixosModules.fnotify = {
-          imports = [./fnotify.nix];
-
-          config = {
-            config,
-            pkgs,
-            ...
-          }: {
-            services.fnotify.package = self.packages.${system}.fnotify;
-          };
-        };
-      }
-    );
+      };
+    });
 }
