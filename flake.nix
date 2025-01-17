@@ -29,6 +29,18 @@
             maintainers = with pkgs.lib.maintainers; [filipforsstrom];
           };
         };
+
+        nixosModules.fnotify = {
+          imports = [./fnotify.nix];
+
+          config = {
+            config,
+            pkgs,
+            ...
+          }: {
+            services.fnotify.package = self.packages.${system}.fnotify;
+          };
+        };
       }
     );
 }

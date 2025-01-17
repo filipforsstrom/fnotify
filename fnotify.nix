@@ -5,7 +5,6 @@
   ...
 }:
 with lib; let
-  fnotify = pkgs.callPackage ./default.nix {};
   cfg = config.services.fnotify;
 in {
   options = {
@@ -33,6 +32,12 @@ in {
         default = "chmod,create,remove,rename,write";
         description = "Comma-separated list of events to watch.";
       };
+
+      package = mkOption {
+        type = types.package;
+        default = pkgs.fnotify;
+        description = "The fnotify package to use.";
+      };
     };
   };
 
@@ -43,7 +48,7 @@ in {
       wantedBy = ["multi-user.target"];
 
       serviceConfig = {
-        ExecStart = "${fnotify}/bin/fnotify --dir ${cfg.dir} --prefix ${cfg.prefix} --event ${cfg.events}";
+        ExecStart = "${cfg.package}/bin/fnotify --dir ${cfg.dir} --prefix ${cfg.prefix} --event ${cfg.events}";
         Restart = "always";
         RestartSec = "5s";
       };
