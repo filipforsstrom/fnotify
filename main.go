@@ -22,7 +22,12 @@ func main() {
 
 	dir := *dirPtr
 	prefixes := strings.Split(*prefixPtr, ",")
-	events := strings.Split(*eventPtr, ",")
+	eventsStrings := strings.Split(*eventPtr, ",")
+
+	var events fsnotify.Op
+	for _, eventString := range eventsStrings {
+		events |= parseEvent(eventString)
+	}
 
 	// Create new watcher.
 	watcher, err := fsnotify.NewWatcher()
@@ -40,7 +45,7 @@ func main() {
 					return
 				}
 				for _, prefix := range prefixes {
-					if strings.HasPrefix(filepath.Base(event.Name), prefix) && event.Has(fsnotify.Create) {
+					if strings.HasPrefix(filepath.Base(event.Name), prefix) && event.Op&events != 0 {
 						log.Println("event:", event)
 						break
 					}
