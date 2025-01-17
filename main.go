@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/gen2brain/beeep"
 )
 
 func main() {
@@ -47,6 +48,10 @@ func main() {
 				for _, prefix := range prefixes {
 					if strings.HasPrefix(filepath.Base(event.Name), prefix) && event.Op&events != 0 {
 						log.Println("event:", event)
+						err := beeep.Notify("New file event", event.String(), "assets/information.png")
+						if err != nil {
+							panic(err)
+						}
 						break
 					}
 				}
