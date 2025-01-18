@@ -36,18 +36,23 @@
           default = "chmod,create,remove,rename,write";
           description = "Comma-separated list of events";
         };
+        user = lib.mkOption {
+          type = lib.types.str;
+          default = lib.mkDefault config.users.users.${config.services.fnotify.user}.name;
+          description = "User to run fnotify as";
+        };
       };
 
       config = lib.mkIf config.services.fnotify.enable {
         systemd.services.fnotify = {
           description = "fnotify";
           wantedBy = ["multi-user.target"];
-          after = ["network.target"];
+          after = ["graphical.target"];
           serviceConfig = {
             ExecStart = "${self.packages.${pkgs.system}.default}/bin/fnotify -dir=${config.services.fnotify.dir} -prefix=${config.services.fnotify.prefix} -event=${config.services.fnotify.event}";
             Restart = "always";
             Type = "simple";
-            User = "ff";
+            User = config.services.fnotify.user;
           };
         };
       };
