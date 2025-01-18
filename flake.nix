@@ -67,6 +67,10 @@
         type = "app";
         program = "${self.packages.${system}.default}/bin/fnotify";
       };
+
+      devShell = gopkg.mkShell {
+        buildInputs = with gopkg; [go];
+      };
     }))
     // {
       nixosModules.default = nixosModule;
