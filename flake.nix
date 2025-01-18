@@ -46,8 +46,7 @@
       config = lib.mkIf config.services.fnotify.enable {
         systemd.services.fnotify = {
           description = "fnotify";
-          wantedBy = ["multi-user.target"];
-          after = ["graphical.target"];
+          wantedBy = ["graphical.target"];
           serviceConfig = {
             ExecStart = "${self.packages.${pkgs.system}.default}/bin/fnotify -dir=${config.services.fnotify.dir} -prefix=${config.services.fnotify.prefix} -event=${config.services.fnotify.event}";
             Restart = "always";
