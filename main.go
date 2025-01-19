@@ -37,39 +37,34 @@ func main() {
 	}
 	defer watcher.Close()
 
-	// Start listening for events.
-	go func() {
-		for {
-			select {
-			case event, ok := <-watcher.Events:
-				if !ok {
-					return
-				}
-				for _, prefix := range prefixes {
-					if strings.HasPrefix(filepath.Base(event.Name), prefix) && event.Op&events != 0 {
-						log.Println("event:", event)
-						err := beeep.Notify("New file event", event.String(), "assets/information.png")
-						if err != nil {
-							panic(err)
-						}
-						break
-					}
-				}
-			case err, ok := <-watcher.Errors:
-				if !ok {
-					return
-				}
-				log.Println("error:", err)
-			}
-		}
-	}()
-
 	// Add the directory.
 	err = watcher.Add(dir)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Block main goroutine forever.
-	<-make(chan struct{})
+	// Start listening for events.
+	for {
+		select {
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return
+			}
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(filepath.Base(event.Name), prefix) && event.Op&events != 0 {
+					log.Println("event:", event)
+					err := beeep.Notify("New file event", event.String(), "assets/information.png")
+					if err != nil {
+						panic(err)
+					}
+					break
+				}
+			}
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return
+			}
+			log.Println("error:", err)
+		}
+	}
 }
