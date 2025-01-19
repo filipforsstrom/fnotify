@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"path/filepath"
 	"strings"
@@ -11,15 +10,45 @@ import (
 	"github.com/gen2brain/beeep"
 )
 
+func handleEvent(event fsnotify.Event, prefixes []string, events fsnotify.Op) {
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(filepath.Base(event.Name), prefix) && event.Op&events != 0 {
+			log.Println("event:", event)
+			err := beeep.Notify("New file event", event.String(), "assets/information.png")
+			if err != nil {
+				panic(err)
+			}
+			break
+		}
+	}
+}
+
+func watchDirectory(watcher *fsnotify.Watcher, prefixes []string, events fsnotify.Op) {
+	for {
+		select {
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return
+			}
+			handleEvent(event, prefixes, events)
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return
+			}
+			log.Println("error:", err)
+		}
+	}
+}
+
 func main() {
 	dirPtr := flag.String("dir", "/dev", "a directory")
 	prefixPtr := flag.String("prefix", "tty", "a comma-separated list of prefixes")
 	eventPtr := flag.String("event", "chmod,create,remove,rename,write", "a comma-separated list of events")
 
 	flag.Parse()
-	fmt.Println("dir:", *dirPtr)
-	fmt.Println("event:", *eventPtr)
-	fmt.Println("prefix:", *prefixPtr)
+	log.Println("dir:", *dirPtr)
+	log.Println("event:", *eventPtr)
+	log.Println("prefix:", *prefixPtr)
 
 	dir := *dirPtr
 	prefixes := strings.Split(*prefixPtr, ",")
@@ -44,27 +73,5 @@ func main() {
 	}
 
 	// Start listening for events.
-	for {
-		select {
-		case event, ok := <-watcher.Events:
-			if !ok {
-				return
-			}
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(filepath.Base(event.Name), prefix) && event.Op&events != 0 {
-					log.Println("event:", event)
-					err := beeep.Notify("New file event", event.String(), "assets/information.png")
-					if err != nil {
-						panic(err)
-					}
-					break
-				}
-			}
-		case err, ok := <-watcher.Errors:
-			if !ok {
-				return
-			}
-			log.Println("error:", err)
-		}
-	}
+	watchDirectory(watcher, prefixes, events)
 }
